@@ -81,6 +81,23 @@ from urllib.parse import urlparse
 from pathlib import Path
 from langchain_core.documents import Document
 import sys
+from pathlib import Path
+
+# Ensure project root is in path if run directly
+project_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from src.backend.fastapi_ends.jobs_profile import custom_format, LOG_DIR
+from loguru import logger
+
+logger.add(
+    str(LOG_DIR / "all_around_loader.log"),  
+    filter=lambda record: record["file"].name == "all_around_loader.py",
+    colorize=True,         
+    format=custom_format,
+    rotation="10 MB"       
+)
 
 
 _LOADER_REGISTRY: Dict[str, Callable] = {}
@@ -98,6 +115,7 @@ def register_loader(input_type: str):
         ``_LOADER_REGISTRY`` keyed by ``input_type`` and returns it unchanged.
     """
     def decorator(func: Callable):
+        logger.debug(f"Registering loader '{func.__name__}' for input type '{input_type}'")
         _LOADER_REGISTRY[input_type] = func
         return func
     return decorator
@@ -114,8 +132,11 @@ async def loader_load_text(file_path: str):
         list[Document]: A list of LangChain ``Document`` objects containing the
         file's content and basic metadata (e.g., ``source``).
     """
+    logger.info(f"Loading text file using TextLoader: {file_path}")
     loader = TextLoader(file_path)
-    return await loader.aload()
+    docs = await loader.aload()
+    logger.success(f"Loaded {len(docs)} document(s) from text file.")
+    return docs
 
 
 @register_loader(".md")
@@ -132,8 +153,11 @@ async def loader_load_markdown(file_path: str):
         list[Document]: A list of LangChain ``Document`` objects containing the
         raw Markdown content and basic metadata (e.g., ``source``).
     """
+    logger.info(f"Loading Markdown file using TextLoader: {file_path}")
     loader = TextLoader(file_path)
-    return await loader.aload()
+    docs = await loader.aload()
+    logger.success(f"Loaded {len(docs)} document(s) from Markdown file.")
+    return docs
 
 
 # --- PDFs (Dual Loaders for the Union) ---
@@ -153,8 +177,11 @@ async def loader_load_pdf_fast(file_path: str):
         list[Document]: A list of LangChain ``Document`` objects, one per page,
         with page text and PyMuPDF-sourced metadata.
     """
+    logger.info(f"Loading PDF (fast/primary) using PyMuPDFLoader: {file_path}")
     loader = PyMuPDFLoader(file_path)
-    return await loader.aload()
+    docs = await loader.aload()
+    logger.success(f"Loaded {len(docs)} document(s) from primary PDF loader.")
+    return docs
 
 
 @register_loader("pdf_secondary")
@@ -173,8 +200,11 @@ async def loader_load_pdf_fallback(file_path: str):
         list[Document]: A list of LangChain ``Document`` objects, one per page,
         with page text and PyPDF-sourced metadata.
     """
+    logger.info(f"Loading PDF (fallback/secondary) using PyPDFLoader: {file_path}")
     loader = PyPDFLoader(file_path)
-    return await loader.aload()
+    docs = await loader.aload()
+    logger.success(f"Loaded {len(docs)} document(s) from secondary PDF loader.")
+    return docs
 
 
 # --- WORD DOCUMENTS ---
@@ -193,8 +223,11 @@ async def load_word_docx(file_path: str):
         list[Document]: A list of LangChain ``Document`` objects containing the
         extracted plain text and basic metadata.
     """
+    logger.info(f"Loading Word document (.docx) using Docx2txtLoader: {file_path}")
     loader = Docx2txtLoader(file_path)
-    return await loader.aload()
+    docs = await loader.aload()
+    logger.success(f"Loaded {len(docs)} document(s) from .docx file.")
+    return docs
 
 
 @register_loader(".doc")
@@ -211,8 +244,11 @@ async def load_word_doc(file_path: str):
         list[Document]: A list of LangChain ``Document`` objects containing the
         extracted text and metadata provided by the unstructured parser.
     """
+    logger.info(f"Loading legacy Word document (.doc) using UnstructuredWordDocumentLoader: {file_path}")
     loader = UnstructuredWordDocumentLoader(file_path)
-    return await loader.aload()
+    docs = await loader.aload()
+    logger.success(f"Loaded {len(docs)} document(s) from .doc file.")
+    return docs
 
 
 # --- WEB LINKS ---
@@ -234,9 +270,12 @@ async def load_web_link(link: str):
         scraped page text and URL metadata.
     """
 
+    logger.info(f"Scraping web link using WebBaseLoader: {link}")
     loader = WebBaseLoader(link)
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, loader.load)
+    docs = await loop.run_in_executor(None, loader.load)
+    logger.success(f"Scraped {len(docs)} document(s) from web link.")
+    return docs
 
 
 async def process_document(path_or_link: str):
@@ -272,18 +311,22 @@ async def process_document(path_or_link: str):
         ValueError: If the file extension or input type has no registered loader.
         requests.HTTPError: If a remote file download returns a non-2xx HTTP status.
     """
+    logger.info(f"Starting process_document for input: {path_or_link}")
+    
     # --- 0. CONVERT GOOGLE DRIVE SHARE LINKS TO DIRECT DOWNLOAD ---
     if "drive.google.com/file/d/" in path_or_link:
        file_id = path_or_link.split("/file/d/")[1].split("/")[0]
        path_or_link = f"https://drive.google.com/uc?export=download&id={file_id}"
-       print("Google Drive link detected, converting to direct download and then we will proceed ")
-    
-    response = requests.get(path_or_link)
-    response.raise_for_status()
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-    temp_file.write(response.content)
-    temp_file.close()
-    path_or_link = temp_file.name
+       logger.info(f"Google Drive link detected. Converted to direct download: {path_or_link}")
+       
+       logger.debug("Downloading Google Drive file...")
+       response = requests.get(path_or_link)
+       response.raise_for_status()
+       temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+       temp_file.write(response.content)
+       temp_file.close()
+       path_or_link = temp_file.name
+       logger.success(f"Downloaded Google Drive file to temporary path: {path_or_link}")
     
     is_url = re.match(r'^https?:\/\/', path_or_link)
     working_path_for_file = path_or_link 
@@ -295,7 +338,7 @@ async def process_document(path_or_link: str):
         
         # If the link points directly to a file (like .pdf or .docx)
         if url_ext in [".pdf", ".docx", ".doc", ".txt", ".md"]:
-            print(f"Downloading temporary file for: {url_ext}")
+            logger.info(f"URL points to a file with extension '{url_ext}'. Downloading temporary file...")
             
             response = requests.get(path_or_link)
             response.raise_for_status() 
@@ -306,11 +349,14 @@ async def process_document(path_or_link: str):
             temp_file.close() 
             
             working_path_for_file = temp_file.name
+            logger.success(f"File downloaded successfully to {working_path_for_file}")
             
         else:
             # If it has no file extension, treat it as a standard web page
+            logger.info("No file extension found in URL. Treating as a standard web page.")
             loader_class = _LOADER_REGISTRY.get("url")
             docs = await loader_class(path_or_link)
+            logger.success("Successfully processed standard web page.")
             return {"standard": docs}
 
     else:
@@ -320,23 +366,28 @@ async def process_document(path_or_link: str):
         # If it is not a URL and the file does not exist on your computer, 
         # we assume the user just pasted a paragraph of text directly and we will make document objects out of it .
         if not os.path.exists(working_path_for_file):
-            print("Raw text and it will be converted to doc object")
+            logger.info("Input is not a URL and file does not exist. Treating as raw pasted text.")
             raw_doc = Document(
                 page_content=working_path_for_file, 
                 metadata={"source": "user_pasted_text"}
             )
+            logger.success("Raw text successfully converted to Document object.")
             return {"standard": [raw_doc]}
 
     # --- 3. EXTRACT THE EXTENSION FOR LOCAL ROUTING ---
     file_extension = Path(working_path_for_file).suffix.lower()
+    logger.debug(f"Determined file extension for local routing: '{file_extension}'")
 
     # --- 4. DUAL-LOADER FOR PDFs (Returns both for your custom union) ---
     if file_extension == ".pdf":
+        logger.info("PDF extension detected. Initializing dual-loaders (primary and secondary).")
         loader1 = _LOADER_REGISTRY["pdf_primary"](working_path_for_file)   
         loader2 = _LOADER_REGISTRY["pdf_secondary"](working_path_for_file) 
         
         # Run both at the exact same time
+        logger.debug("Running both PDF loaders concurrently...")
         docs1, docs2 = await asyncio.gather(loader1, loader2)
+        logger.success(f"PDF dual-loading complete. Primary docs: {len(docs1)}, Secondary docs: {len(docs2)}.")
         
         return {
             "primary_docs": docs1, 
@@ -345,13 +396,17 @@ async def process_document(path_or_link: str):
         
     # --- 5. STANDARD SINGLE LOADERS (.docx, .doc, .txt, .md) ---
     if file_extension in [".docx", ".doc", ".txt", ".md"]:
+        logger.info(f"Standard file extension '{file_extension}' detected. Routing to registered single loader.")
         loader_class = _LOADER_REGISTRY.get(file_extension)
         if not loader_class:
+             logger.error(f"Loader not found in registry for extension: {file_extension}")
              raise ValueError(f"Loader not found in registry for: {file_extension}")
              
         docs = await loader_class(working_path_for_file)
+        logger.success(f"Successfully processed standard file '{file_extension}' with single loader.")
         return {"standard": docs}
 
+    logger.error(f"Unsupported input type encountered: {file_extension}")
     raise ValueError(f"Unsupported input type: {file_extension}")
 
 
@@ -369,6 +424,7 @@ def extract_words_from_docs(docs) -> list:
     Returns:
         list[str]: A flat list of individual word strings extracted from all documents.
     """
+    logger.debug(f"Extracting words from {len(docs)} document(s).")
     # 1. Loop through the documents and join their text together
     # We use a space to join so the end of page 1 doesn't merge with page 2
     full_text = " ".join([doc.page_content for doc in docs])
@@ -378,6 +434,7 @@ def extract_words_from_docs(docs) -> list:
     
     # 3. .split() automatically breaks it into words by any whitespace
     word_list = full_text.split()
+    logger.debug(f"Extracted a total of {len(word_list)} words.")
     
     return word_list
 
@@ -403,22 +460,28 @@ def perform_final_union(processing_result: dict) -> str:
         str: A single whitespace-separated string of words. Returns an empty
         string if ``processing_result`` contains neither expected key.
     """
+    logger.info("Performing final union of extracted text.")
     # --- SCENARIO 1: It's a PDF (Dual Loaders) ---
     if "primary_docs" in processing_result:
+        logger.debug("Scenario 1: PDF Dual Loaders detected.")
         words1 = extract_words_from_docs(processing_result["primary_docs"])
         words2 = extract_words_from_docs(processing_result["secondary_docs"])
         
         # Ordered Union: Combine lists, remove duplicates, keep order
         unionated_words = list(dict.fromkeys(words1 + words2))
+        logger.success(f"Final union completed for PDF. Unique words combined: {len(unionated_words)}.")
         
         # Turn it back into a single string
         return " ".join(unionated_words)
         
     # --- SCENARIO 2: Standard Single Loader ---
     elif "standard" in processing_result:
+        logger.debug("Scenario 2: Standard Single Loader detected.")
         words = extract_words_from_docs(processing_result["standard"])
+        logger.success(f"Final union completed for standard loader. Words combined: {len(words)}.")
         return " ".join(words)
         
+    logger.warning("No valid keys found in processing_result. Returning empty string.")
     return ""
 
 
@@ -435,22 +498,25 @@ async def main():
     """
     # Prompt the user for a dynamic path or link
     user_input = input("Enter your link or path here: ")
+    logger.info(f"User provided input: {user_input}")
     
     try:
         # 1. Fetch the document objects using the appropriate loader
+        logger.info("Starting document processing flow.")
         document_objects_loaders = await process_document(user_input)
         
         # 2. Perform the ordered union to get the final text
         finaltext = perform_final_union(document_objects_loaders)
         
         # 3. Save the results to sample.txt
+        logger.info("Saving unionized text to 'sample.txt'.")
         with open("sample.txt", "w", encoding="utf-8") as st:
             st.write(finaltext)
             
-        print("Success: Output saved to sample.txt")
+        logger.success("Success: Output saved to sample.txt")
         
     except Exception as e:
-        print(f"Error processing document: {e}")
+        logger.error(f"Error processing document: {e}")
 
 if __name__ == "__main__":
     asyncio.run(main())
