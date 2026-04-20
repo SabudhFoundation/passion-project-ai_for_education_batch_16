@@ -27,15 +27,17 @@ LinkedIn may rate-limit aggressive scraping.  The companion CLI
 to reduce the risk of being blocked.
 """
 
+from pyasn1.debug import Debug
 import json
 import sys
 import time
 from typing import Any
-
+from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 from loguru import logger
 
+LOG_DIR = Path(__file__).parent / "logs"
 
 # 1. Clear the default setup
 logger.remove()
@@ -67,9 +69,17 @@ custom_format = (
     "<level>{message}</level>"
 )
 
-# 3. Apply the format
-logger.add(sys.stdout, colorize=True, format=custom_format)
+# 3. Apply the format to the Terminal
+logger.add(sys.stdout, colorize=True, format=custom_format, level="DEBUG")
 
+# 4. Apply the format to the specific log file (Fixes KeyError: 'name')
+logger.add(
+    str(LOG_DIR / "jobs_profile.log"),  
+    filter=lambda record: record["file"].name == "jobs_profile.py",
+    colorize=True,         
+    format=custom_format,
+    rotation="10 MB"       
+)
 
 
 def get_full_job_profile(job_url: str) -> dict[str, Any]:
