@@ -28,11 +28,48 @@ to reduce the risk of being blocked.
 """
 
 import json
+import sys
 import time
 from typing import Any
 
 import requests
 from bs4 import BeautifulSoup
+from loguru import logger
+
+
+# 1. Clear the default setup
+logger.remove()
+
+# 2. Define the exact colors for EVERY piece of data
+custom_format = (
+    # TIME: Bright Yellow
+    "<fg #F4D03F>{time:YYYY-MM-DD HH:mm:ss.SSS}</> | "
+    
+    # LEVEL: Dynamic (Changes based on INFO, ERROR, etc.)
+    "<level>{level: <8}</level> | "
+    
+    # PROCESS ID: Hot Pink
+    "<fg #FF69B4>Proc-{process.id}</>:"
+    
+    # THREAD ID: Bright Orange
+    "<fg #FF8C00>Thread-{thread.id}</> | "
+    
+    # MODULE/FILE: Lime Green
+    "<fg #00FF00>{module}</>:"
+    
+    # FUNCTION: Bright Cyan
+    "<fg #00FFFF>{function}</>:"
+    
+    # LINE NUMBER: Coral/Red
+    "<fg #FF7F50>{line}</> - "
+    
+    # MESSAGE: Dynamic (Matches the level color)
+    "<level>{message}</level>"
+)
+
+# 3. Apply the format
+logger.add(sys.stdout, colorize=True, format=custom_format)
+
 
 
 def get_full_job_profile(job_url: str) -> dict[str, Any]:
@@ -92,10 +129,9 @@ def get_full_job_profile(job_url: str) -> dict[str, Any]:
     True
     """
 
-    # --- 1. Extract the numeric job ID from the URL --------------------------
     job_id: str = job_url.split("?")[0].split("-")[-1]
+    logger.info(f"Fetching job profile | job_id={job_id}")
 
-    # --- 2. Fetch the guest-facing job posting page --------------------------
     api_url = f"https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_id}"
 
     headers = {
@@ -107,19 +143,16 @@ def get_full_job_profile(job_url: str) -> dict[str, Any]:
     response = requests.get(api_url, headers=headers)
 
     if response.status_code != 200:
+        logger.error(f"Failed to fetch job_id={job_id} | HTTP {response.status_code}")
         return {"error": f"Failed to fetch profile (HTTP {response.status_code})"}
 
-    # --- 3. Parse the HTML ---------------------------------------------------
-    # Make a soup object of that scrape that we did for the job description
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # We have to find the description div
     description_div = soup.find("div", class_="description__text")
     full_description: str = (
         description_div.text.strip() if description_div else "No description found"
     )
 
-    # --- 4. Extract structured criteria (seniority, type, etc.) --------------
     criteria_dict: dict[str, str] = {}
     criteria_list = soup.find("ul", class_="description__job-criteria-list")
 
@@ -134,6 +167,8 @@ def get_full_job_profile(job_url: str) -> dict[str, Any]:
             ).text.strip()
             criteria_dict[header] = value
 
+    logger.success(f"Profile parsed | job_id={job_id} | criteria_count={len(criteria_dict)}")
+
     return {
         "job_id": job_id,
         "description": full_description,
@@ -141,31 +176,24 @@ def get_full_job_profile(job_url: str) -> dict[str, Any]:
     }
 
 
-# ---------------------------------------------------------------------------
-# CLI entry-point – batch-enrich jobs from a previously scraped JSON file
-# ---------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    print("    Opening jobs.json    ")
+    logger.info("Opening jobs.json")
 
     try:
         with open("jobs.json", "r", encoding="utf-8") as file:
             basic_jobs = json.load(file)
     except FileNotFoundError:
-        print("Could not find jobs.json ! Did you run the first script ?")
+        logger.error("Could not find jobs.json — did you run the first script?")
         exit()
 
-    print(f" Found {len(basic_jobs)} jobs. Starting the deep scrape...")
-    print(
-        " Reminder: This will take about 3 seconds per job to avoid getting blocked.\n "
-    )
+    logger.info(f"Found {len(basic_jobs)} jobs — starting deep scrape (~3s per job)")
 
     detailed_jobs = []
 
     for index, job in enumerate(basic_jobs):
-        print(
-            f"Fetching profile {index + 1} of {len(basic_jobs)}: "
-            f"{job['position']} at {job['company']}"
+        logger.info(
+            f"[{index + 1}/{len(basic_jobs)}] {job['position']} at {job['company']}"
         )
 
         job_url = job.get("jobUrl")
@@ -177,9 +205,9 @@ if __name__ == "__main__":
             time.sleep(3)
 
     output_filename = "master_jobs_detailed.json"
-    print(f"\nSaving all data to {output_filename}...")
+    logger.info(f"Saving {len(detailed_jobs)} enriched jobs to {output_filename}")
 
     with open(output_filename, "w", encoding="utf-8") as file:
         json.dump(detailed_jobs, file, indent=4)
 
-    print("All done! Your project data is ready.")
+    logger.success("Done — all enriched job data saved successfully.")
