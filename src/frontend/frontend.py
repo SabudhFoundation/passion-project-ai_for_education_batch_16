@@ -6,9 +6,9 @@ st.set_page_config(page_title="UpskillxAI", layout="wide")
 
 
 
-st.title("UpskillxAI")
-st.markdown("### AI Powered Upskilling")
-st.markdown("Upload your CV to match with top jobs and uncover your skill gaps.")
+st.markdown("<h1 style='text-align: center;'>UpskillxAI</h1>", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align: center;'>AI Powered Upskilling</h3>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>Upload your CV to match with top jobs and uncover your skill gaps.</p>", unsafe_allow_html=True)
 
 # ---- SIDEBAR (INPUT)
 with st.sidebar:
@@ -65,7 +65,13 @@ if uploaded_files or user_text:
     st.markdown("<br>", unsafe_allow_html=True)
     
     # ---- TABS ----
-    tab1, tab2, tab3 = st.tabs(["Skills Analysis", "Job Matches", "Learning Paths"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        ":material/query_stats: Skills Analysis", 
+        ":material/work: Job Matches", 
+        ":material/school: Learning Paths",
+        ":material/description: Resume Builder",
+        ":material/forum: Career Assistant"
+    ])
     
     # TAB 1: Analysis
     with tab1:
@@ -98,21 +104,27 @@ if uploaded_files or user_text:
             {
                 "position": "Senior Software Engineer", 
                 "company": "Microsoft", 
-                "location": "Redmond, WA (Hybrid)", 
+                "location": "Redmond, WA",
+                "workplace": "Hybrid",
+                "role": "Full-time",
                 "jobUrl": "https://careers.microsoft.com/software-engineer", 
                 "salary": "$150,000 - $190,000"
             },
             {
                 "position": "Data Scientist", 
                 "company": "Google", 
-                "location": "Mountain View, CA (On-site)", 
+                "location": "Mountain View, CA", 
+                "workplace": "Office",
+                "role": "Full-time",
                 "jobUrl": "https://careers.google.com/data-scientist", 
                 "salary": "$160,000 - $210,000"
             },
             {
                 "position": "Machine Learning Engineer", 
                 "company": "OpenAI", 
-                "location": "San Francisco, CA (Remote)", 
+                "location": "San Francisco, CA", 
+                "workplace": "Remote",
+                "role": "Contract",
                 "jobUrl": "https://openai.com/careers/ml-engineer", 
                 "salary": "$200,000 - $280,000"
             }
@@ -124,6 +136,22 @@ if uploaded_files or user_text:
                 with colA:
                     st.markdown(f"### {job['position']}")
                     st.markdown(f"**{job['company']}** | {job['location']}")
+                    st.markdown(
+                        f"""
+                        <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,0,0');
+                        </style>
+                        <div style='margin-top: 8px; display: flex; gap: 8px; align-items: center;'>
+                            <span style='background-color: #E2E8F0; color: #475569; padding: 4px 10px; border-radius: 16px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px;'>
+                                <span class="material-symbols-rounded" style="font-size: 16px;">apartment</span> {job.get('workplace', 'Office')}
+                            </span>
+                            <span style='background-color: #E2E8F0; color: #475569; padding: 4px 10px; border-radius: 16px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px;'>
+                                <span class="material-symbols-rounded" style="font-size: 16px;">schedule</span> {job.get('role', 'Full-time')}
+                            </span>
+                        </div>
+                        """, 
+                        unsafe_allow_html=True
+                    )
                 with colB:
                     st.markdown(f"<h4 style='color: #059669; margin-bottom: 0;'>{job.get('salary', '')}</h4>", unsafe_allow_html=True)
                     st.markdown("<br>", unsafe_allow_html=True)
@@ -154,6 +182,34 @@ if uploaded_files or user_text:
                 st.markdown("The best platform to help you enhance your algorithms and data structures skills.")
                 st.markdown("<br>", unsafe_allow_html=True)
                 st.link_button("Start Practicing", "https://leetcode.com/", use_container_width=True)
+
+    # TAB 4: Resume Builder
+    with tab4:
+        st.markdown("#### Resume Builder")
+        st.markdown("Generate a tailored resume based on your extracted skills and target roles.")
+        st.info("This feature is currently under development. Stay tuned!")
+
+    # TAB 5: Career Assistant
+    with tab5:
+        st.markdown("#### Career Assistant")
+        st.markdown("Ask questions about your career path, recommended courses, or skill gaps.")
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # Hardcoded chat history
+        with st.chat_message("user"):
+            st.markdown("Is the Google Generative AI course relevant for me?")
+            
+        with st.chat_message("assistant"):
+            st.markdown("It is not highly relevant at this point because you are pursuing a core Data Science role. Focusing on foundational machine learning and advanced statistical modeling would be more beneficial for your current career trajectory.")
+            
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        
+        # Fake chat input
+        chat_col1, chat_col2 = st.columns([5, 1])
+        with chat_col1:
+            st.text_input("Message Career Assistant", placeholder="Type your question here...", label_visibility="collapsed")
+        with chat_col2:
+            st.button("Send", use_container_width=True, type="primary")
 
 else:
     # Empty State when no file is uploaded
