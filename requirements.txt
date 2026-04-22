@@ -34,3 +34,4 @@ reducto>=0.1.0              # PDF extraction via Reducto cloud API
 python-dotenv>=1.0.0        # Load REDUCTO_API_KEY from .env file
 
 langfuse
+#pdf_loader
