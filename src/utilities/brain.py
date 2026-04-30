@@ -142,7 +142,7 @@ def _normalise_resume(raw: Union[str, dict]) -> str:
             parts.append(f"  {education}")
 
     # Any remaining keys we haven't handled above
-    handled = {"text", "raw_text", "name", "email", "phone", "location",
+    handledco = {"text", "raw_text", "name", "email", "phone", "location",
                 "linkedin", "github", "skills", "experience", "education"}
     for key, val in raw.items():
         if key not in handled and val:
