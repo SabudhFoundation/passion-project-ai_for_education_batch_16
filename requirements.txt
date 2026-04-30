@@ -34,3 +34,20 @@ reducto>=0.1.0              # PDF extraction via Reducto cloud API
 python-dotenv>=1.0.0        # Load REDUCTO_API_KEY from .env file
 
 langfuse
+
+# ─────────────────────────────────────────────────────────────
+# Requirements for:
+#   src/utilities/brain.py
+#   src/utilities/net_surf.py
+# ─────────────────────────────────────────────────────────────
+
+# --- AI Brain (brain.py) ---
+langgraph                   # State machine framework for the agent brain
+langchain-google-genai      # Gemini LLM integration for LangChain
+
+# --- Web Surfer (net_surf.py) ---
+langchain-community         # Contains TavilySearchResults and community tools
+langchain-core              # Core messaging classes like HumanMessage
+tavily-python               # Underlying Tavily API client for AI search
+pydantic                    # Data validation and structured LLM output
+loguru                      # Extremely colorful and structured logging
