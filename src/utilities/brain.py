@@ -222,16 +222,13 @@ class SkillBrainState(TypedDict):
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Free-tier models tried in order when a quota error occurs.
-# gemini-2.0-flash has limit:0 on the free tier — never use it.
 _FREE_TIER_MODELS = [
-    "gemini-1.5-flash-latest",  # resolves server-side; works with old lib versions
-    "gemini-1.5-flash",         # 15 RPM / 1 500 RPD
-    "gemini-1.5-flash-8b",      # lighter model, same free quota
-    "gemini-1.0-pro",           # legacy fallback
+    "gemini-2.5-flash",         # 10 RPM / 250,000 TPM / 250 RPD
+    "gemini-2.5-flash-lite",    # 15 RPM / 250,000 TPM / 1,000 RPD
 ]
 
 
-def get_gemini(model: str = "gemini-1.5-flash"):
+def get_gemini(model: str = "gemini-2.5-flash"):
     """Return a Gemini client pinned to *model* (never let the library pick)."""
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:

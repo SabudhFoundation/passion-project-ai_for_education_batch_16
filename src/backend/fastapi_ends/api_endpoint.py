@@ -25,9 +25,8 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-
-from linkdin import scrape_linkedin_pro
-from jobs_profile import get_full_job_profile
+from src.backend.fastapi_ends.linkdin import scrape_linkedin_pro
+from src.backend.fastapi_ends.jobs_profile import get_full_job_profile
 
 
 # ---------------------------------------------------------------------------
@@ -803,3 +802,4 @@ async def get_jobs_with_profiles(req: FullRequest):
     # Step 3 — Enrich with full descriptions
     detailed = await loop.run_in_executor(executor, lambda: enrich_jobs(jobs))
     return detailed
+#uv run uvicorn api_endpoint.py:app --reload  
