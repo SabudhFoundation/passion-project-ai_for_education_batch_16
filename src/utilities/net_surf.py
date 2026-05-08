@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from typing import List
 
 from loguru import logger
+from langfuse import observe
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 from langchain_community.tools.tavily_search import TavilySearchResults
@@ -67,6 +68,7 @@ class SkillResourceOutput(BaseModel):
     skills: List[SkillResource]
 
 
+@observe()
 async def add_queries_to_state(state: SkillBrainState):
     
     skill_gaps = state.get("skill_gaps", [])
@@ -87,6 +89,7 @@ async def add_queries_to_state(state: SkillBrainState):
     logger.success(f"Generated {len(state['search_queries'])} search queries successfully.")
     return state
 
+@observe()
 async def get_skill_resources(state: SkillBrainState):
     queries = state.get("search_queries", [])
     
