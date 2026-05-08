@@ -50,6 +50,7 @@ Author: [Your Name]
 """
 
 import os
+from langfuse import observe
 import json
 import re
 from typing import TypedDict, Union
@@ -293,6 +294,7 @@ Rules:
 #  NODE
 # ─────────────────────────────────────────────────────────────────────────────
 
+@observe()
 def analyse_node(state: SkillBrainState) -> SkillBrainState:
     """
     Core LangGraph node.

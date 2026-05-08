@@ -1,5 +1,6 @@
 import os
 import random
+from langfuse import observe
 from typing import List, Dict, Any, Literal
 
 # Environment Variables
@@ -278,6 +279,7 @@ async def load_web_link(link: str):
     return docs
 
 
+@observe()
 async def process_document(path_or_link: str):
     """Routes a file path, URL, or raw pasted text to the correct loader and returns Documents.
 
