@@ -299,25 +299,100 @@ if "pipeline_data" in st.session_state:
         with chat_col2:
             st.button("Send", use_container_width=True, type="primary")
 
-    st.markdown("<br><hr>", unsafe_allow_html=True)
-    st.markdown("### 📊 How is your ATS Score calculated?")
-    st.markdown("""
-    The **ATS (Applicant Tracking System) Score** is an AI-generated metric (0-100) reflecting how well your resume matches the target job description. It evaluates three key areas:
-    
-    1. **Keyword Match**: The overlap between the technical/soft skills extracted from your resume and the explicit/implicit requirements in the Job Description.
-    2. **Contextual Relevance**: How well your past experience aligns with the requested domain.
-    3. **Formatting**: Checks for unreadable data blocks or missing standard sections (like Education or Experience).
-    
-    *A score above 75% typically indicates a strong match. If your score is lower, consider adding the suggested skills from the "Skill Gaps" section to improve your chances of passing automated filters.*
-    """)
-
 elif not analyze_btn and "pipeline_data" not in st.session_state:
     st.info("Please upload your CV and JD in the sidebar, then click 'Analyze Profile'.")
-    st.markdown(
-        """
-        <div style='text-align: center; padding: 100px 20px; border: 2px dashed #CBD5E1; border-radius: 12px; background-color: #F8FAFC; margin-top: 40px;'>
-            <h2 style='color: #475569;'>Awaiting Document Upload</h2>
-            <p style='color: #64748B; font-size: 18px;'>Upload your resume and Job Description in the sidebar to generate your personalized career dashboard.</p>
-        </div>
-        """, unsafe_allow_html=True
-    )
+    
+    graph_svg = """
+    <style>
+    @keyframes movePath {
+      0% { stroke-dashoffset: 100; }
+      100% { stroke-dashoffset: 0; }
+    }
+    .data-flow {
+      stroke-dasharray: 10 10;
+      animation: movePath 2s linear infinite;
+    }
+    </style>
+    <div style='display: flex; justify-content: center; padding: 40px; background-color: #F8FAFC; border-radius: 12px; border: 1px solid #E2E8F0; margin-top: 20px; margin-bottom: 30px;'>
+        <svg width="600" height="400" viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+            
+            <!-- Paths / Edges -->
+            <path d="M 300 50 L 200 120" stroke="#CBD5E1" stroke-width="2" />
+            <path d="M 300 50 L 400 120" stroke="#CBD5E1" stroke-width="2" />
+            
+            <path d="M 200 160 L 300 230" stroke="#CBD5E1" stroke-width="2" />
+            <path d="M 400 160 L 300 230" stroke="#CBD5E1" stroke-width="2" />
+            
+            <path d="M 300 270 L 150 340" stroke="#CBD5E1" stroke-width="2" />
+            <path d="M 300 270 L 300 340" stroke="#CBD5E1" stroke-width="2" />
+            <path d="M 300 270 L 450 340" stroke="#CBD5E1" stroke-width="2" />
+            
+            <!-- Animated Data Flow -->
+            <path d="M 300 50 L 200 120" stroke="#3B82F6" stroke-width="3" class="data-flow" />
+            <path d="M 300 50 L 400 120" stroke="#3B82F6" stroke-width="3" class="data-flow" />
+            
+            <path d="M 200 160 L 300 230" stroke="#10B981" stroke-width="3" class="data-flow" />
+            <path d="M 400 160 L 300 230" stroke="#10B981" stroke-width="3" class="data-flow" />
+            
+            <path d="M 300 270 L 150 340" stroke="#8B5CF6" stroke-width="3" class="data-flow" />
+            <path d="M 300 270 L 300 340" stroke="#8B5CF6" stroke-width="3" class="data-flow" />
+            <path d="M 300 270 L 450 340" stroke="#8B5CF6" stroke-width="3" class="data-flow" />
+
+            <!-- Nodes -->
+            <!-- START -->
+            <rect x="240" y="10" width="120" height="40" rx="8" fill="#F1F5F9" stroke="#94A3B8" stroke-width="2"/>
+            <text x="300" y="35" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="14" fill="#334155">START</text>
+            
+            <!-- Load Docs -->
+            <rect x="140" y="120" width="120" height="40" rx="8" fill="#EFF6FF" stroke="#3B82F6" stroke-width="2"/>
+            <text x="200" y="145" text-anchor="middle" font-family="sans-serif" font-weight="600" font-size="12" fill="#1E3A8A">Load Resume</text>
+            
+            <rect x="340" y="120" width="120" height="40" rx="8" fill="#EFF6FF" stroke="#3B82F6" stroke-width="2"/>
+            <text x="400" y="145" text-anchor="middle" font-family="sans-serif" font-weight="600" font-size="12" fill="#1E3A8A">Load JD</text>
+            
+            <!-- Analyze -->
+            <rect x="220" y="230" width="160" height="40" rx="8" fill="#ECFDF5" stroke="#10B981" stroke-width="2"/>
+            <text x="300" y="255" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="14" fill="#064E3B">AI Brain Analysis</text>
+            
+            <!-- Fetching -->
+            <rect x="90" y="340" width="120" height="40" rx="8" fill="#F5F3FF" stroke="#8B5CF6" stroke-width="2"/>
+            <text x="150" y="365" text-anchor="middle" font-family="sans-serif" font-weight="600" font-size="12" fill="#4C1D95">Scrape Jobs</text>
+            
+            <rect x="240" y="340" width="120" height="40" rx="8" fill="#F5F3FF" stroke="#8B5CF6" stroke-width="2"/>
+            <text x="300" y="365" text-anchor="middle" font-family="sans-serif" font-weight="600" font-size="12" fill="#4C1D95">Web Search</text>
+            
+            <rect x="390" y="340" width="120" height="40" rx="8" fill="#F5F3FF" stroke="#8B5CF6" stroke-width="2"/>
+            <text x="450" y="365" text-anchor="middle" font-family="sans-serif" font-weight="600" font-size="12" fill="#4C1D95">Static Resources</text>
+
+        </svg>
+    </div>
+    """
+    st.markdown(graph_svg, unsafe_allow_html=True)
+    
+    st.markdown("### :material/help: Frequently Asked Questions")
+    
+    with st.expander(":material/bar_chart: How is the ATS Score calculated?"):
+        st.markdown("""
+        The **ATS (Applicant Tracking System) Score** is an AI-generated metric (0-100) reflecting how well your resume matches the target job description. It evaluates three key areas:
+        
+        1. **Keyword Match**: The overlap between the technical/soft skills extracted from your resume and the explicit/implicit requirements in the Job Description.
+        2. **Contextual Relevance**: How well your past experience aligns with the requested domain.
+        3. **Formatting**: Checks for unreadable data blocks or missing standard sections (like Education or Experience).
+        
+        *A score above 75% typically indicates a strong match.*
+        """)
+        
+    with st.expander(":material/psychology: How does the AI Skill Gap Analysis work?"):
+        st.markdown("""
+        We use Google's **Gemini AI** to act as an expert career coach. The AI reads your formatted resume alongside the target job description. It extracts the skills you possess and compares them to the skills implicitly and explicitly demanded by the role, outputting a highly accurate "Gap List" of what you need to learn.
+        """)
+        
+    with st.expander(":material/travel_explore: How do you scrape jobs in real-time?"):
+        st.markdown("""
+        When you submit your target role, our backend spins up a **Selenium-powered web scraper**. It actively navigates to top job boards (like Naukri) and extracts live, current job postings that match your desired title and location. This ensures you aren't looking at stale, cached job data.
+        """)
+        
+    with st.expander(":material/school: How are Learning Resources found?"):
+        st.markdown("""
+        For every skill gap identified by the AI, our graph uses **Tavily Web Search** to dynamically find the best, most up-to-date tutorials, articles, and courses on the internet. We also cross-reference these with a curated list of static high-quality learning platforms.
+        """)
