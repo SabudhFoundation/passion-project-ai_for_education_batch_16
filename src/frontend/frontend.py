@@ -104,17 +104,29 @@ if analyze_btn:
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
             opacity: 0.5;
-            animation: pulse 2s infinite ease-in-out;
         }
+        .step-item:nth-child(1) { animation: seq1 8s infinite; }
+        .step-item:nth-child(2) { animation: seq2 8s infinite; }
+        .step-item:nth-child(3) { animation: seq3 8s infinite; }
+        .step-item:nth-child(4) { animation: seq4 8s infinite; }
         
-        .step-item:nth-child(1) { animation-delay: 0s; }
-        .step-item:nth-child(2) { animation-delay: 0.5s; }
-        .step-item:nth-child(3) { animation-delay: 1.0s; }
-        .step-item:nth-child(4) { animation-delay: 1.5s; }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 0.5; transform: scale(1); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-            50% { opacity: 1; transform: scale(1.02); box-shadow: 0 10px 15px -3px rgb(59 130 246 / 0.2); border: 1px solid #bfdbfe; }
+        @keyframes seq1 {
+            0%, 25% { opacity: 1; transform: scale(1.02); box-shadow: 0 10px 15px -3px rgb(59 130 246 / 0.2); border: 1px solid #bfdbfe; }
+            30%, 100% { opacity: 0.5; transform: scale(1); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid transparent; }
+        }
+        @keyframes seq2 {
+            0%, 20% { opacity: 0.5; transform: scale(1); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid transparent; }
+            25%, 50% { opacity: 1; transform: scale(1.02); box-shadow: 0 10px 15px -3px rgb(59 130 246 / 0.2); border: 1px solid #bfdbfe; }
+            55%, 100% { opacity: 0.5; transform: scale(1); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid transparent; }
+        }
+        @keyframes seq3 {
+            0%, 45% { opacity: 0.5; transform: scale(1); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid transparent; }
+            50%, 75% { opacity: 1; transform: scale(1.02); box-shadow: 0 10px 15px -3px rgb(59 130 246 / 0.2); border: 1px solid #bfdbfe; }
+            80%, 100% { opacity: 0.5; transform: scale(1); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid transparent; }
+        }
+        @keyframes seq4 {
+            0%, 70% { opacity: 0.5; transform: scale(1); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid transparent; }
+            75%, 100% { opacity: 1; transform: scale(1.02); box-shadow: 0 10px 15px -3px rgb(59 130 246 / 0.2); border: 1px solid #bfdbfe; }
         }
         
         .step-icon {
@@ -303,71 +315,61 @@ elif not analyze_btn and "pipeline_data" not in st.session_state:
     st.info("Please upload your CV and JD in the sidebar, then click 'Analyze Profile'.")
     
     graph_svg = """
-    <style>
-    @keyframes movePath {
-      0% { stroke-dashoffset: 100; }
-      100% { stroke-dashoffset: 0; }
-    }
-    .data-flow {
-      stroke-dasharray: 10 10;
-      animation: movePath 2s linear infinite;
-    }
-    </style>
     <div style='display: flex; justify-content: center; padding: 40px; background-color: #F8FAFC; border-radius: 12px; border: 1px solid #E2E8F0; margin-top: 20px; margin-bottom: 30px;'>
         <svg width="600" height="400" viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-            
             <!-- Paths / Edges -->
             <path d="M 300 50 L 200 120" stroke="#CBD5E1" stroke-width="2" />
             <path d="M 300 50 L 400 120" stroke="#CBD5E1" stroke-width="2" />
-            
             <path d="M 200 160 L 300 230" stroke="#CBD5E1" stroke-width="2" />
             <path d="M 400 160 L 300 230" stroke="#CBD5E1" stroke-width="2" />
-            
             <path d="M 300 270 L 150 340" stroke="#CBD5E1" stroke-width="2" />
             <path d="M 300 270 L 300 340" stroke="#CBD5E1" stroke-width="2" />
             <path d="M 300 270 L 450 340" stroke="#CBD5E1" stroke-width="2" />
-            
             <!-- Animated Data Flow -->
-            <path d="M 300 50 L 200 120" stroke="#3B82F6" stroke-width="3" class="data-flow" />
-            <path d="M 300 50 L 400 120" stroke="#3B82F6" stroke-width="3" class="data-flow" />
-            
-            <path d="M 200 160 L 300 230" stroke="#10B981" stroke-width="3" class="data-flow" />
-            <path d="M 400 160 L 300 230" stroke="#10B981" stroke-width="3" class="data-flow" />
-            
-            <path d="M 300 270 L 150 340" stroke="#8B5CF6" stroke-width="3" class="data-flow" />
-            <path d="M 300 270 L 300 340" stroke="#8B5CF6" stroke-width="3" class="data-flow" />
-            <path d="M 300 270 L 450 340" stroke="#8B5CF6" stroke-width="3" class="data-flow" />
-
+            <path d="M 300 50 L 200 120" stroke="#3B82F6" stroke-width="3" stroke-dasharray="10 10">
+                <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" repeatCount="indefinite" />
+            </path>
+            <path d="M 300 50 L 400 120" stroke="#3B82F6" stroke-width="3" stroke-dasharray="10 10">
+                <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" repeatCount="indefinite" />
+            </path>
+            <path d="M 200 160 L 300 230" stroke="#10B981" stroke-width="3" stroke-dasharray="10 10">
+                <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" repeatCount="indefinite" />
+            </path>
+            <path d="M 400 160 L 300 230" stroke="#10B981" stroke-width="3" stroke-dasharray="10 10">
+                <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" repeatCount="indefinite" />
+            </path>
+            <path d="M 300 270 L 150 340" stroke="#8B5CF6" stroke-width="3" stroke-dasharray="10 10">
+                <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" repeatCount="indefinite" />
+            </path>
+            <path d="M 300 270 L 300 340" stroke="#8B5CF6" stroke-width="3" stroke-dasharray="10 10">
+                <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" repeatCount="indefinite" />
+            </path>
+            <path d="M 300 270 L 450 340" stroke="#8B5CF6" stroke-width="3" stroke-dasharray="10 10">
+                <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" repeatCount="indefinite" />
+            </path>
             <!-- Nodes -->
             <!-- START -->
             <rect x="240" y="10" width="120" height="40" rx="8" fill="#F1F5F9" stroke="#94A3B8" stroke-width="2"/>
             <text x="300" y="35" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="14" fill="#334155">START</text>
-            
             <!-- Load Docs -->
             <rect x="140" y="120" width="120" height="40" rx="8" fill="#EFF6FF" stroke="#3B82F6" stroke-width="2"/>
             <text x="200" y="145" text-anchor="middle" font-family="sans-serif" font-weight="600" font-size="12" fill="#1E3A8A">Load Resume</text>
-            
             <rect x="340" y="120" width="120" height="40" rx="8" fill="#EFF6FF" stroke="#3B82F6" stroke-width="2"/>
             <text x="400" y="145" text-anchor="middle" font-family="sans-serif" font-weight="600" font-size="12" fill="#1E3A8A">Load JD</text>
-            
             <!-- Analyze -->
             <rect x="220" y="230" width="160" height="40" rx="8" fill="#ECFDF5" stroke="#10B981" stroke-width="2"/>
             <text x="300" y="255" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="14" fill="#064E3B">AI Brain Analysis</text>
-            
             <!-- Fetching -->
             <rect x="90" y="340" width="120" height="40" rx="8" fill="#F5F3FF" stroke="#8B5CF6" stroke-width="2"/>
             <text x="150" y="365" text-anchor="middle" font-family="sans-serif" font-weight="600" font-size="12" fill="#4C1D95">Scrape Jobs</text>
-            
             <rect x="240" y="340" width="120" height="40" rx="8" fill="#F5F3FF" stroke="#8B5CF6" stroke-width="2"/>
             <text x="300" y="365" text-anchor="middle" font-family="sans-serif" font-weight="600" font-size="12" fill="#4C1D95">Web Search</text>
-            
             <rect x="390" y="340" width="120" height="40" rx="8" fill="#F5F3FF" stroke="#8B5CF6" stroke-width="2"/>
             <text x="450" y="365" text-anchor="middle" font-family="sans-serif" font-weight="600" font-size="12" fill="#4C1D95">Static Resources</text>
-
         </svg>
     </div>
     """
-    st.markdown(graph_svg, unsafe_allow_html=True)
+    st.markdown(graph_svg.replace('\n', ''), unsafe_allow_html=True)
     
     st.markdown("### :material/help: Frequently Asked Questions")
     
