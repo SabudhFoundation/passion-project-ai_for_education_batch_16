@@ -76,7 +76,13 @@ async def add_queries_to_state(state: SkillBrainState):
     prompt = f"Given skill gaps: {skill_gaps} and learning path: {learning_path}, frame search queries for a search engine to find learning resources. Return ONLY a comma-separated list of queries."
     
     response = await gemini.ainvoke([HumanMessage(content=prompt)])
-    state["search_queries"] = [q.strip() for q in response.content.split(",") if q.strip()]
+    content = response.content
+    if isinstance(content, list):
+        text = "".join(item.get("text", "") if isinstance(item, dict) else str(item) for item in content)
+    else:
+        text = str(content)
+        
+    state["search_queries"] = [q.strip() for q in text.split(",") if q.strip()]
     
     logger.success(f"Generated {len(state['search_queries'])} search queries successfully.")
     return state
