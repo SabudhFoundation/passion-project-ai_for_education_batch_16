@@ -802,4 +802,40 @@ async def get_jobs_with_profiles(req: FullRequest):
     # Step 3 — Enrich with full descriptions
     detailed = await loop.run_in_executor(executor, lambda: enrich_jobs(jobs))
     return detailed
-#uv run uvicorn api_endpoint.py:app --reload  
+
+
+# ---------------------------------------------------------------------------
+# Full UpskillxAI Pipeline Endpoint
+# ---------------------------------------------------------------------------
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+from src.backend.main_runner import build_main_graph
+
+class PipelineRequest(BaseModel):
+    resume_input: str = Field(..., description="Resume text, URL, or local path.")
+    jd_input: str = Field(..., description="Job description text, URL, or local path.")
+    target_role: str = Field(default="software engineer", description="Target role for scraping.")
+    location: str = Field(default="", description="Location for scraping.")
+
+@app.post(
+    "/pipeline/run",
+    summary="Run Full UpskillxAI Pipeline",
+    description="Runs the full LangGraph pipeline: extraction, brain analysis, scraping, and net surfing. Returns the final state.",
+    tags=["Pipeline"],
+)
+async def run_pipeline(req: PipelineRequest):
+    graph = build_main_graph()
+    initial_state = {
+        "resume_input": req.resume_input,
+        "jd_input": req.jd_input,
+        "target_role": req.target_role,
+        "location": req.location,
+        "status_messages": []
+    }
+    
+    # Run the graph asynchronously
+    final_state = await graph.ainvoke(initial_state)
+    return final_state
+
+#uv run uvicorn api_endpoint.py:app --reload

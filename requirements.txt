@@ -1,54 +1,44 @@
-# external requirements
+# --- Core API & Framework ---
+fastapi
+uvicorn
+
+# --- Frontend ---
+streamlit
+requests
+
+# --- LangChain & AI ---
+langchain-core
+langchain-community
+langchain-google-genai
+langchain-chroma
+langchain-experimental
+langgraph
+langgraph-checkpoint-sqlite
+chromadb
+
+# --- Scraping & Web Search ---
+selenium
+webdriver-manager
+beautifulsoup4
+lxml
+tavily-python
+
+# --- Document Extraction ---
+reducto
+docx2txt
+pymupdf
+
+# --- Additional Langchain & API ---
+langchain-openai
+langchain-text-splitters
+httpx
+
+# --- Utilities & Validation ---
+pydantic
+python-dotenv
+loguru
 click
 Sphinx
 coverage
-awscli
 flake8
-python-dotenv>=0.5.1
-
-
-
-# ─────────────────────────────────────────────────────────────
-# Requirements for:
-#   src/backend/scrapers/naukri.com_scraper.py
-#   src/backend/loaders/reducto_loader.py
-#
-# Install with:
-#   pip install -r requirements.txt
-#
-# ALSO install Chrome on Linux (one-time, system-level):
-#   wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-#   sudo apt install ./google-chrome-stable_current_amd64.deb -y
-# ─────────────────────────────────────────────────────────────
-
-# --- Scraper (naukri_scraper.py) ---
-selenium>=4.18.0            # Browser automation for JS-rendered pages
-webdriver-manager>=4.0.1    # Auto-downloads matching ChromeDriver binary
-beautifulsoup4>=4.12.0      # HTML parsing after Selenium renders the page
-lxml>=5.1.0                 # Fast HTML parser backend for BeautifulSoup
-
-# --- Resume Loader (resume_loader.py) ---
-reducto>=0.1.0              # PDF extraction via Reducto cloud API
-
-# --- Utilities ---
-python-dotenv>=1.0.0        # Load REDUCTO_API_KEY from .env file
-
 langfuse
-#pdf_loader
-
-# ─────────────────────────────────────────────────────────────
-# Requirements for:
-#   src/utilities/brain.py
-#   src/utilities/net_surf.py
-# ─────────────────────────────────────────────────────────────
-
-# --- AI Brain (brain.py) ---
-langgraph                   # State machine framework for the agent brain
-langchain-google-genai      # Gemini LLM integration for LangChain
-
-# --- Web Surfer (net_surf.py) ---
-langchain-community         # Contains TavilySearchResults and community tools
-langchain-core              # Core messaging classes like HumanMessage
-tavily-python               # Underlying Tavily API client for AI search
-pydantic                    # Data validation and structured LLM output
-loguru                      # Extremely colorful and structured logging

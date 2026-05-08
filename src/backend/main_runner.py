@@ -1,7 +1,9 @@
 import asyncio
 from typing import TypedDict, Annotated, List, Dict, Any, Union
 import operator
-
+import importlib.util
+import os
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, START, END
 
 from src.backend.loaders.all_around_loader import process_document, perform_final_union
@@ -12,7 +14,7 @@ from src.utilities.net_surf import add_queries_to_state, get_skill_resources
 from pydantic import Field
 from src.utilities.resource_finder import get_learning_resources
 
-# FORCING UPDATE
+
 class GraphState(TypedDict):
     resume_input: Annotated[str, Field(description="Input for the resume, can be a path, URL, or raw text string.")]
     jd_input: Annotated[str, Field(description="Input for the job description, can be a path, URL, or raw text string.")]
@@ -39,26 +41,107 @@ class GraphState(TypedDict):
     error: Annotated[str, Field(description="Error message if any step in the pipeline fails.")]
     status_messages: Annotated[List[str], operator.add, Field(description="Append-only list of status messages for streaming UI updates.")]
 
+
+
+# Dynamically import the scraper because the file name contains a dot
+spec = importlib.util.spec_from_file_location("naukri_scraper", "src/backend/scraper/naukri.com_scraper.py")
+naukri_scraper = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(naukri_scraper)
+
 async def load_resume_node(state: GraphState) -> GraphState:
-    pass 
+    resume_input = state.get("resume_input", "")
+    if not resume_input:
+        return {"resume_text": ""}
+    docs_dict = await process_document(resume_input)
+    resume_text = perform_final_union(docs_dict)
+    return {"resume_text": resume_text}
 
 async def load_jd_node(state: GraphState) -> GraphState:
-    pass
+    jd_input = state.get("jd_input", "")
+    if not jd_input:
+        return {"job_description": ""}
+        
+    if str(jd_input).startswith("http"):
+        jd_text = await get_job_description(jd_input)
+        if not jd_text:
+             docs_dict = await process_document(jd_input)
+             jd_text = perform_final_union(docs_dict)
+    else:
+        docs_dict = await process_document(jd_input)
+        jd_text = perform_final_union(docs_dict)
+        
+    return {"job_description": jd_text}
 
 async def analyse_node_wrapper(state: GraphState) -> GraphState:
-    pass
+    brain_state = {
+        "resume_text": state.get("resume_text", ""),
+        "job_description": state.get("job_description", "")
+    }
+    result = analyse_node(brain_state)
+    return {
+        "candidate_skills": result.get("candidate_skills", []),
+        "required_skills": result.get("required_skills", []),
+        "skill_gaps": result.get("skill_gaps", []),
+        "ats_score": result.get("ats_score", 0),
+        "learning_path": result.get("learning_path", [])
+    }
 
 async def scrape_jobs_node(state: GraphState) -> GraphState:
-    pass
+    loop = asyncio.get_event_loop()
+    keyword = state.get("target_role") or "software engineer"
+    location = state.get("location") or ""
+    
+    # Run the synchronous selenium scraper in a thread
+    job_listings = await loop.run_in_executor(
+        None, 
+        lambda: naukri_scraper.scrape_naukri_jobs(
+            keyword=keyword,
+            location=location,
+            pages=1,
+            save_csv=False,
+            save_json=False
+        )
+    )
+    return {"job_listings": job_listings}
 
 async def net_surf_node(state: GraphState) -> GraphState:
-    pass
+    dummy_state = {
+        "skill_gaps": state.get("skill_gaps", []),
+        "learning_path": state.get("learning_path", [])
+    }
+    dummy_state = await add_queries_to_state(dummy_state)
+    dummy_state = await get_skill_resources(dummy_state)
+    return {
+        "search_queries": dummy_state.get("search_queries", []),
+        "skill_resources": dummy_state.get("skill_resources", "")
+    }
 
 async def resource_finder_node(state: GraphState) -> GraphState:
-    pass
+    static_resources = []
+    for skill in state.get("skill_gaps", []):
+        static_resources.extend(get_learning_resources(skill))
+    return {"static_resources": static_resources}
 
 async def summarise_node(state: GraphState) -> GraphState:
-    pass
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return {"career_summary": "Summary unavailable due to missing API key."}
+    
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+    prompt = f"""
+    Summarize the career prospects based on the following:
+    Candidate Skills: {state.get('candidate_skills')}
+    Skill Gaps: {state.get('skill_gaps')}
+    Target Role: {state.get('target_role')}
+    ATS Score: {state.get('ats_score')}
+    
+    Write a short, encouraging 3-sentence summary for the candidate.
+    """
+    try:
+        res = await llm.ainvoke(prompt)
+        return {"career_summary": res.content}
+    except Exception as e:
+        return {"career_summary": f"Could not generate summary: {str(e)}"}
 
 def build_main_graph():
     graph = StateGraph(GraphState)
