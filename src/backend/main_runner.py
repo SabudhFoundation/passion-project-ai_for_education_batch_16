@@ -16,6 +16,7 @@ from typing import TypedDict, Annotated, List, Dict, Any, Union
 import operator
 import importlib.util
 import os
+from langfuse import observe
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, START, END
 
@@ -69,6 +70,7 @@ spec = importlib.util.spec_from_file_location("naukri_scraper", "src/backend/scr
 naukri_scraper = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(naukri_scraper)
 
+@observe()
 async def load_resume_node(state: GraphState) -> GraphState:
     """
     Asynchronously loads and parses the candidate's resume document.
@@ -87,6 +89,7 @@ async def load_resume_node(state: GraphState) -> GraphState:
     resume_text = perform_final_union(docs_dict)
     return {"resume_text": resume_text}
 
+@observe()
 async def load_jd_node(state: GraphState) -> GraphState:
     """
     Asynchronously loads and parses the target job description (JD).
@@ -114,6 +117,7 @@ async def load_jd_node(state: GraphState) -> GraphState:
         
     return {"job_description": jd_text}
 
+@observe()
 async def analyse_node_wrapper(state: GraphState) -> GraphState:
     """
     Analyzes the extracted resume and job description using the AI Brain module.
@@ -142,6 +146,7 @@ async def analyse_node_wrapper(state: GraphState) -> GraphState:
         "learning_path": result.get("learning_path", [])
     }
 
+@observe()
 async def scrape_jobs_node(state: GraphState) -> GraphState:
     """
     Scrapes external job boards (e.g., Naukri) for current job openings matching the target role.
@@ -172,6 +177,7 @@ async def scrape_jobs_node(state: GraphState) -> GraphState:
     )
     return {"job_listings": job_listings}
 
+@observe()
 async def net_surf_node(state: GraphState) -> GraphState:
     """
     Generates dynamic search queries based on skill gaps and fetches relevant web resources.
@@ -196,6 +202,7 @@ async def net_surf_node(state: GraphState) -> GraphState:
         "skill_resources": dummy_state.get("skill_resources", "")
     }
 
+@observe()
 async def resource_finder_node(state: GraphState) -> GraphState:
     """
     Retrieves static learning resources (Udemy, YouTube, Coursera) for identified skill gaps.
@@ -214,6 +221,7 @@ async def resource_finder_node(state: GraphState) -> GraphState:
         static_resources.extend(get_learning_resources(skill))
     return {"static_resources": static_resources}
 
+@observe()
 async def summarise_node(state: GraphState) -> GraphState:
     """
     Synthesizes a final career prospect summary for the candidate.
