@@ -51,7 +51,7 @@ if not api_key:
     logger.error("GEMINI_API_KEY is missing from your .env file!")
     raise ValueError("GEMINI_API_KEY is missing from your .env file! Please add it.")
 
-gemini = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+gemini = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite-preview", google_api_key=api_key)
 
 
 
@@ -68,6 +68,7 @@ class SkillResourceOutput(BaseModel):
 
 
 async def add_queries_to_state(state: SkillBrainState):
+    
     skill_gaps = state.get("skill_gaps", [])
     learning_path = state.get("learning_path", [])
     
