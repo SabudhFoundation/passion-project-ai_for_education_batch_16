@@ -27,6 +27,7 @@ tavily-python
 reducto
 docx2txt
 pymupdf
+pypdf
 
 # --- Additional Langchain & API ---
 langchain-openai

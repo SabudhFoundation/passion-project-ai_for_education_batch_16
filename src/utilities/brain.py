@@ -263,28 +263,28 @@ JOB DESCRIPTION:
 
 Return this exact JSON structure:
 {{
-  "candidate_skills": ["skill1", "skill2"],
-  "required_skills": ["skill1", "skill2"],
-  "skill_gaps": ["missing_skill1", "missing_skill2"],
+  "candidate_skills": ["Languages: Python", "Frameworks: Django"],
+  "required_skills": ["Languages: Python", "Tools: Docker"],
+  "skill_gaps": ["Tools: Docker", "Tools: Kubernetes"],
   "ats_score": 72,
   "learning_path": [
     {{
-      "skill": "missing_skill_name",
+      "skill": "Docker",
       "search_queries": [
-        "best free course for missing_skill_name beginners",
-        "missing_skill_name tutorial project based learning",
-        "missing_skill_name roadmap 2024 how to learn"
+        "best free course for Docker beginners",
+        "Docker tutorial project based learning",
+        "Docker roadmap 2024 how to learn"
       ]
     }}
   ]
 }}
 
 Rules:
-- candidate_skills: every technical skill, tool, language, framework found in the resume
-- required_skills: every skill explicitly or implicitly required by the JD
-- skill_gaps: skills in required_skills that are missing or not mentioned in the resume
+- candidate_skills: every technical skill, tool, language, framework found in the resume. Format each string strictly as "Category: Skill" (e.g., "Languages: Python", "Tools: Git"). Use broad categories like Languages, Frameworks, Tools, Soft Skills.
+- required_skills: every skill explicitly or implicitly required by the JD. Format each string as "Category: Skill".
+- skill_gaps: skills in required_skills that are missing or not mentioned in the resume. Format each string as "Category: Skill".
 - ats_score: integer 0-100. Score based on keyword overlap, experience match, and formatting signals
-- learning_path: one entry per skill_gap, each with exactly 3 search_queries a person can paste into Google
+- learning_path: one entry per skill_gap (use just the skill name without the category prefix here), each with exactly 3 search_queries a person can paste into Google
 - search_queries must be specific and actionable — not generic like "learn python"
 - Return ONLY the JSON. No other text.
 """

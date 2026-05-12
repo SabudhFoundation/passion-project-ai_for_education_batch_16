@@ -52,7 +52,9 @@ if not api_key:
     logger.error("GEMINI_API_KEY is missing from your .env file!")
     raise ValueError("GEMINI_API_KEY is missing from your .env file! Please add it.")
 
-gemini = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite-preview", google_api_key=api_key)
+llm_primary = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite-preview", google_api_key=api_key)
+llm_fallback = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+gemini = llm_primary.with_fallbacks([llm_fallback])
 
 
 
@@ -70,23 +72,23 @@ class SkillResourceOutput(BaseModel):
 
 @observe()
 async def add_queries_to_state(state: SkillBrainState):
-    
     skill_gaps = state.get("skill_gaps", [])
     learning_path = state.get("learning_path", [])
     
-    logger.debug(f"Generating search queries for gaps: {skill_gaps}")
-    prompt = f"Given skill gaps: {skill_gaps} and learning path: {learning_path}, frame search queries for a search engine to find learning resources. Return ONLY a comma-separated list of queries."
-    
-    response = await gemini.ainvoke([HumanMessage(content=prompt)])
-    content = response.content
-    if isinstance(content, list):
-        text = "".join(item.get("text", "") if isinstance(item, dict) else str(item) for item in content)
-    else:
-        text = str(content)
-        
-    state["search_queries"] = [q.strip() for q in text.split(",") if q.strip()]
-    
-    logger.success(f"Generated {len(state['search_queries'])} search queries successfully.")
+    queries = []
+    # Extract only the top 1 search query for the top 5 skill gaps to prevent prompt overload
+    for item in learning_path[:5]:
+        item_queries = item.get("search_queries", [])
+        if item_queries:
+            queries.append(item_queries[0])
+            
+    # Fallback if learning_path is somehow empty
+    if not queries and skill_gaps:
+        for skill in skill_gaps[:5]:
+            queries.append(f"best free course to learn {skill}")
+            
+    state["search_queries"] = queries
+    logger.success(f"Extracted {len(state['search_queries'])} search queries successfully.")
     return state
 
 @observe()
@@ -120,7 +122,9 @@ async def get_skill_resources(state: SkillBrainState):
     {raw_search_context}
     """
     
-    structured_llm = gemini.with_structured_output(SkillResourceOutput)
+    structured_llm_primary = llm_primary.with_structured_output(SkillResourceOutput)
+    structured_llm_fallback = llm_fallback.with_structured_output(SkillResourceOutput)
+    structured_llm = structured_llm_primary.with_fallbacks([structured_llm_fallback])
     structured_data = await structured_llm.ainvoke([HumanMessage(content=prompt)])
     
     sd = structured_data
