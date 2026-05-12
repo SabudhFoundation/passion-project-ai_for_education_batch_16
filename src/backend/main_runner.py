@@ -239,7 +239,9 @@ async def summarise_node(state: GraphState) -> GraphState:
     if not api_key:
         return {"career_summary": "Summary unavailable due to missing API key."}
     
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+    llm_primary = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+    llm_fallback = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=api_key)
+    llm = llm_primary.with_fallbacks([llm_fallback])
     prompt = f"""
     Summarize the career prospects based on the following:
     Candidate Skills: {state.get('candidate_skills')}

@@ -27,7 +27,15 @@ with st.sidebar:
         
     st.markdown("<br>", unsafe_allow_html=True)
     
-    jd_input = st.text_area("Job Description (Paste Text or URL)", placeholder="e.g., https://linkedin.com/... or paste text")
+    uploaded_jd_file = st.file_uploader(
+        "Upload Job Description",
+        type=["pdf", "docx", "txt"],
+        accept_multiple_files=False,
+        help="Supported formats: PDF, DOCX, TXT."
+    )
+    
+    with st.expander("Or paste JD text/URL directly"):
+        jd_input = st.text_area("Job Description (Paste Text or URL)", placeholder="e.g., https://linkedin.com/... or paste text", height=150)
     
     job_pref = st.text_input("Target Role", placeholder="e.g., Senior Software Engineer")
     
@@ -37,18 +45,27 @@ with st.sidebar:
 if analyze_btn:
     if not (uploaded_files or user_text):
         st.warning("Please upload a CV or paste CV text.")
-    elif not jd_input:
-        st.warning("Please provide a Job Description (URL or text).")
+    elif not (uploaded_jd_file or jd_input):
+        st.warning("Please upload a Job Description or paste JD text/URL.")
     else:
         resume_input = ""
+        temp_dir = tempfile.gettempdir()
         if uploaded_files:
-            temp_dir = tempfile.gettempdir()
             temp_path = os.path.join(temp_dir, uploaded_files.name)
             with open(temp_path, "wb") as f:
                 f.write(uploaded_files.getvalue())
             resume_input = temp_path
         else:
             resume_input = user_text
+            
+        jd_input_final = ""
+        if uploaded_jd_file:
+            temp_path_jd = os.path.join(temp_dir, uploaded_jd_file.name)
+            with open(temp_path_jd, "wb") as f:
+                f.write(uploaded_jd_file.getvalue())
+            jd_input_final = temp_path_jd
+        else:
+            jd_input_final = jd_input
             
         loading_placeholder = st.empty()
         
@@ -90,9 +107,10 @@ if analyze_btn:
         .process-steps {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 8px;
             width: 100%;
             max-width: 450px;
+            align-items: center;
         }
         
         .step-item {
@@ -103,30 +121,44 @@ if analyze_btn:
             background: white;
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            opacity: 0.5;
+            opacity: 0.4;
+            width: 100%;
+            border: 1px solid transparent;
+            animation: highlight-item 0.5s forwards;
         }
-        .step-item:nth-child(1) { animation: seq1 8s infinite; }
-        .step-item:nth-child(2) { animation: seq2 8s infinite; }
-        .step-item:nth-child(3) { animation: seq3 8s infinite; }
-        .step-item:nth-child(4) { animation: seq4 8s infinite; }
         
-        @keyframes seq1 {
-            0%, 25% { opacity: 1; transform: scale(1.02); box-shadow: 0 10px 15px -3px rgb(59 130 246 / 0.2); border: 1px solid #bfdbfe; }
-            30%, 100% { opacity: 0.5; transform: scale(1); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid transparent; }
+        .step-arrow {
+            color: #94a3b8;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            opacity: 0.4;
+            animation: highlight-arrow 0.5s forwards;
         }
-        @keyframes seq2 {
-            0%, 20% { opacity: 0.5; transform: scale(1); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid transparent; }
-            25%, 50% { opacity: 1; transform: scale(1.02); box-shadow: 0 10px 15px -3px rgb(59 130 246 / 0.2); border: 1px solid #bfdbfe; }
-            55%, 100% { opacity: 0.5; transform: scale(1); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid transparent; }
+
+        .process-steps > div:nth-child(1) { animation-delay: 0s; }
+        .process-steps > div:nth-child(2) { animation-delay: 2s; }
+        .process-steps > div:nth-child(3) { animation-delay: 2.5s; }
+        .process-steps > div:nth-child(4) { animation-delay: 4.5s; }
+        .process-steps > div:nth-child(5) { animation-delay: 5s; }
+        .process-steps > div:nth-child(6) { animation-delay: 7s; }
+        .process-steps > div:nth-child(7) { animation-delay: 7.5s; }
+        
+        @keyframes highlight-item {
+            to { 
+                opacity: 1; 
+                transform: scale(1.02); 
+                border-color: #bfdbfe; 
+                box-shadow: 0 10px 15px -3px rgb(59 130 246 / 0.2); 
+            }
         }
-        @keyframes seq3 {
-            0%, 45% { opacity: 0.5; transform: scale(1); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid transparent; }
-            50%, 75% { opacity: 1; transform: scale(1.02); box-shadow: 0 10px 15px -3px rgb(59 130 246 / 0.2); border: 1px solid #bfdbfe; }
-            80%, 100% { opacity: 0.5; transform: scale(1); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid transparent; }
-        }
-        @keyframes seq4 {
-            0%, 70% { opacity: 0.5; transform: scale(1); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid transparent; }
-            75%, 100% { opacity: 1; transform: scale(1.02); box-shadow: 0 10px 15px -3px rgb(59 130 246 / 0.2); border: 1px solid #bfdbfe; }
+
+        @keyframes highlight-arrow {
+            to { 
+                opacity: 1; 
+                color: #3b82f6; 
+                transform: translateY(4px); 
+            }
         }
         
         .step-icon {
@@ -151,14 +183,17 @@ if analyze_btn:
                     <span class="material-symbols-rounded step-icon">description</span>
                     <span class="step-text">Parsing Resume & Job Description</span>
                 </div>
+                <div class="step-arrow"><span class="material-symbols-rounded">arrow_downward</span></div>
                 <div class="step-item">
                     <span class="material-symbols-rounded step-icon">psychology</span>
                     <span class="step-text">AI Skill Gap Analysis</span>
                 </div>
+                <div class="step-arrow"><span class="material-symbols-rounded">arrow_downward</span></div>
                 <div class="step-item">
                     <span class="material-symbols-rounded step-icon">travel_explore</span>
                     <span class="step-text">Scraping Web for Jobs & Resources</span>
                 </div>
+                <div class="step-arrow"><span class="material-symbols-rounded">arrow_downward</span></div>
                 <div class="step-item">
                     <span class="material-symbols-rounded step-icon">auto_awesome</span>
                     <span class="step-text">Synthesizing Career Summary</span>
@@ -172,7 +207,7 @@ if analyze_btn:
         try:
             response = requests.post("http://127.0.0.1:8000/pipeline/run", json={
                 "resume_input": resume_input,
-                "jd_input": jd_input,
+                "jd_input": jd_input_final,
                 "target_role": job_pref,
                 "location": ""
             })
@@ -217,29 +252,44 @@ if "pipeline_data" in st.session_state:
     st.markdown("<br>", unsafe_allow_html=True)
     
     # ---- TABS ----
-    # Dropped Resume Builder as discussed
-    tab1, tab2, tab3, tab4 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
         ":material/query_stats: Skills Analysis", 
         ":material/work: Job Matches", 
         ":material/school: Learning Paths",
-        ":material/forum: Career Assistant"
+        "🚧 Chatbot ( Possible Advancement )",
+        ":material/edit_document: Resume Builder"
     ])
     
     with tab1:
         st.markdown("#### Skill Match Breakdown")
+        # Helper to group "Category: Skill" lists
+        def group_skills(skills_list):
+            groups = {}
+            for item in skills_list:
+                if ":" in item:
+                    cat, skill = item.split(":", 1)
+                    groups.setdefault(cat.strip(), []).append(skill.strip())
+                else:
+                    groups.setdefault("Other", []).append(item.strip())
+            return groups
+
         c1, c2 = st.columns(2)
         with c1:
             st.success("**Verified Skills (You possess these)**")
             if extracted_skills:
-                for skill in extracted_skills:
-                    st.markdown(f"- {skill}")
+                grouped = group_skills(extracted_skills)
+                for cat, skills in grouped.items():
+                    st.markdown(f"**{cat}**")
+                    st.markdown(" ".join([f"`{skill}`" for skill in skills]))
             else:
                 st.write("No technical skills detected.")
         with c2:
             st.warning("**Skill Gaps (Recommended to learn)**")
             if skill_gaps:
-                for skill in skill_gaps:
-                    st.markdown(f"- {skill}")
+                grouped = group_skills(skill_gaps)
+                for cat, skills in grouped.items():
+                    st.markdown(f"**{cat}**")
+                    st.markdown(" ".join([f"`{skill}`" for skill in skills]))
             else:
                 st.write("No major skill gaps detected!")
                 
@@ -252,7 +302,12 @@ if "pipeline_data" in st.session_state:
         if not job_listings:
             st.info("No jobs found for this role/location right now.")
         else:
-            for job in job_listings:
+            if "job_limit" not in st.session_state:
+                st.session_state["job_limit"] = 5
+                
+            displayed_jobs = job_listings[:st.session_state["job_limit"]]
+            
+            for i, job in enumerate(displayed_jobs):
                 with st.container(border=True):
                     colA, colB = st.columns([3, 1])
                     with colA:
@@ -278,15 +333,34 @@ if "pipeline_data" in st.session_state:
                         if job.get('Link') and job.get('Link') != 'N/A':
                             st.link_button("Apply Now", job['Link'], type="primary", use_container_width=True)
                         else:
-                            st.button("No Link", disabled=True, key=job.get('Title')+job.get('Company'))
+                            st.button("No Link", disabled=True, key=f"job_no_link_{i}")
+                            
+            if st.session_state["job_limit"] < len(job_listings):
+                if st.button("Load More Jobs", use_container_width=True):
+                    st.session_state["job_limit"] += 5
+                    st.rerun()
 
     with tab3:
         st.markdown("#### Recommended Learning Paths")
-        if not static_resources:
+        
+        dynamic_res = []
+        raw_res = data.get("skill_resources", "")
+        for line in raw_res.split("\n"):
+            line = line.strip()
+            if line.startswith("resource:"):
+                parts = line.replace("resource:", "", 1).split(" : ", 1)
+                if len(parts) == 2:
+                    dynamic_res.append({"title": parts[0].strip(), "link": parts[1].strip()})
+        
+        combined_resources = static_resources + dynamic_res
+        unique_resources = {res["link"]: res for res in combined_resources}.values()
+        top_10 = list(unique_resources)[:10]
+        
+        if not top_10:
             st.info("No resources found.")
         else:
             cols = st.columns(3)
-            for i, res in enumerate(static_resources):
+            for i, res in enumerate(top_10):
                 col = cols[i % 3]
                 with col:
                     with st.container(border=True):
@@ -294,7 +368,7 @@ if "pipeline_data" in st.session_state:
                         st.link_button("View Resource", res.get("link", "#"), use_container_width=True)
 
     with tab4:
-        st.markdown("#### Career Assistant")
+        st.markdown("#### Chatbot ( Possible Advancement 🚧 )")
         st.markdown("Ask questions about your career path, recommended courses, or skill gaps.")
         
         with st.chat_message("user"):
@@ -310,6 +384,10 @@ if "pipeline_data" in st.session_state:
             st.text_input("Message Career Assistant", placeholder="Type your question here...", label_visibility="collapsed")
         with chat_col2:
             st.button("Send", use_container_width=True, type="primary")
+
+    with tab5:
+        st.markdown("#### Resume Builder")
+        st.info("Coming soon: AI-powered resume builder to help you dynamically update your resume with missing skills.")
 
 elif not analyze_btn and "pipeline_data" not in st.session_state:
     st.info("Please upload your CV and JD in the sidebar, then click 'Analyze Profile'.")
