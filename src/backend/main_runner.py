@@ -70,6 +70,8 @@ spec = importlib.util.spec_from_file_location("naukri_scraper", "src/backend/scr
 naukri_scraper = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(naukri_scraper)
 
+from src.backend.fastapi_ends.linkdin import scrape_linkedin_pro
+
 @observe()
 async def load_resume_node(state: GraphState) -> GraphState:
     """
@@ -149,10 +151,10 @@ async def analyse_node_wrapper(state: GraphState) -> GraphState:
 @observe()
 async def scrape_jobs_node(state: GraphState) -> GraphState:
     """
-    Scrapes external job boards (e.g., Naukri) for current job openings matching the target role.
+    Scrapes external job boards (LinkedIn & Naukri) for current job openings matching the target role.
 
-    This node runs a synchronous Selenium-based scraper within an asyncio executor thread
-    to prevent blocking the main event loop during browser automation.
+    This node runs synchronous requests-based/selenium scrapers within an asyncio executor thread
+    to prevent blocking the main event loop.
 
     Args:
         state (GraphState): The current graph state containing `target_role` and `location`.
@@ -162,10 +164,20 @@ async def scrape_jobs_node(state: GraphState) -> GraphState:
     """
     loop = asyncio.get_event_loop()
     keyword = state.get("target_role") or "software engineer"
-    location = state.get("location") or ""
+    location = state.get("location") or "India"
     
-    # Run the synchronous selenium scraper in a thread
-    job_listings = await loop.run_in_executor(
+    # Run the synchronous linkedin scraper in a thread
+    linkedin_task = loop.run_in_executor(
+        None, 
+        lambda: scrape_linkedin_pro(
+            keywords=keyword,
+            location=location,
+            num_pages=1
+        )
+    )
+    
+    # Run the synchronous naukri scraper in a thread
+    naukri_task = loop.run_in_executor(
         None, 
         lambda: naukri_scraper.scrape_naukri_jobs(
             keyword=keyword,
@@ -175,7 +187,49 @@ async def scrape_jobs_node(state: GraphState) -> GraphState:
             save_json=False
         )
     )
-    return {"job_listings": job_listings}
+    
+    raw_linkedin_jobs, raw_naukri_jobs = await asyncio.gather(linkedin_task, naukri_task)
+    
+    # Map the LinkedIn scraper output
+    linkedin_listings = []
+    for job in raw_linkedin_jobs:
+        linkedin_listings.append({
+            "Title": job.get("position", "Unknown Title"),
+            "Company": job.get("company", "Unknown Company"),
+            "Location": job.get("location", "Unknown Location"),
+            "Experience": job.get("agoTime", "Not specified"),
+            "Description": f"Posted: {job.get('date', 'Recent')}",
+            "Salary": job.get("salary", "Not Disclosed"),
+            "Link": job.get("jobUrl", "N/A"),
+            "Source": "LinkedIn"
+        })
+        
+    # Map the Naukri scraper output
+    naukri_listings = []
+    for job in raw_naukri_jobs:
+        naukri_listings.append({
+            "Title": job.get("Title", "Unknown Title"),
+            "Company": job.get("Company", "Unknown Company"),
+            "Location": job.get("Location", "Unknown Location"),
+            "Experience": job.get("Experience", "Not specified"),
+            "Description": job.get("Description", "Recent"),
+            "Salary": job.get("Salary", "Not Disclosed"),
+            "Link": job.get("Link", "N/A"),
+            "Source": "Naukri"
+        })
+
+    # Interleave them for equal priority
+    combined_listings = []
+    for l_job, n_job in zip(linkedin_listings, naukri_listings):
+        combined_listings.append(l_job)
+        combined_listings.append(n_job)
+        
+    # Append any remaining jobs if one list is longer than the other
+    min_len = min(len(linkedin_listings), len(naukri_listings))
+    combined_listings.extend(linkedin_listings[min_len:])
+    combined_listings.extend(naukri_listings[min_len:])
+        
+    return {"job_listings": combined_listings}
 
 @observe()
 async def net_surf_node(state: GraphState) -> GraphState:

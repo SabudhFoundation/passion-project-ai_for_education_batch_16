@@ -10,6 +10,17 @@ st.markdown("<h1 style='text-align: center;'>UpskillxAI</h1>", unsafe_allow_html
 st.markdown("<h3 style='text-align: center;'>AI Powered Upskilling</h3>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center;'>Upload your CV and JD to match with top jobs and uncover your skill gaps.</p>", unsafe_allow_html=True)
 
+# ---- PERSISTENT STATE
+@st.cache_resource
+def get_persistent_state():
+    return {}
+
+persistent_state = get_persistent_state()
+
+# Sync persistent state to session state so results survive page refresh
+if "pipeline_data" not in st.session_state and "pipeline_data" in persistent_state:
+    st.session_state["pipeline_data"] = persistent_state["pipeline_data"]
+
 # ---- SIDEBAR (INPUT)
 with st.sidebar:
     st.header("Document Upload")
@@ -212,7 +223,10 @@ if analyze_btn:
                 "location": ""
             })
             if response.status_code == 200:
-                st.session_state["pipeline_data"] = response.json()
+                data = response.json()
+                st.session_state["pipeline_data"] = data
+                persistent_state["pipeline_data"] = data
+                persistent_state["job_pref"] = job_pref
             else:
                 st.error(f"Error from backend: {response.text}")
         except Exception as e:
@@ -240,8 +254,9 @@ if "pipeline_data" in st.session_state:
         st.info(career_summary)
         
     m1, m2, m3, m4 = st.columns(4)
+    saved_job_pref = persistent_state.get("job_pref", job_pref)
     with m1:
-        st.metric(label="Target Role", value=job_pref if job_pref else "Not specified")
+        st.metric(label="Target Role", value=saved_job_pref if saved_job_pref else "Not specified")
     with m2:
         st.metric(label="Skills Found", value=str(len(extracted_skills)))
     with m3:
@@ -312,15 +327,27 @@ if "pipeline_data" in st.session_state:
                     colA, colB = st.columns([3, 1])
                     with colA:
                         st.markdown(f"### {job.get('Title', 'Unknown Title')}")
-                        st.markdown(f"**{job.get('Company', 'Unknown Company')}** | {job.get('Location', 'Unknown Location')}")
+                        source_bg = "#E0F2FE" if job.get("Source") == "LinkedIn" else "#FFEDD5"
+                        source_fg = "#0369A1" if job.get("Source") == "LinkedIn" else "#C2410C"
+                        source_icon = "link" if job.get("Source") == "LinkedIn" else "work"
+
                         st.markdown(
                             f"""
                             <style>
                             @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,0,0');
                             </style>
-                            <div style='margin-top: 8px; display: flex; gap: 8px; align-items: center;'>
+                            <div style='margin-top: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;'>
+                                <span style='background-color: #DBEAFE; color: #1E3A8A; padding: 4px 10px; border-radius: 16px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px;'>
+                                    <span class="material-symbols-rounded" style="font-size: 16px;">business</span> {job.get('Company', 'Unknown Company')}
+                                </span>
+                                <span style='background-color: #FEF3C7; color: #92400E; padding: 4px 10px; border-radius: 16px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px;'>
+                                    <span class="material-symbols-rounded" style="font-size: 16px;">location_on</span> {job.get('Location', 'Unknown Location')}
+                                </span>
                                 <span style='background-color: #E2E8F0; color: #475569; padding: 4px 10px; border-radius: 16px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px;'>
-                                    <span class="material-symbols-rounded" style="font-size: 16px;">work_history</span> {job.get('Experience', 'Not specified')}
+                                    <span class="material-symbols-rounded" style="font-size: 16px;">schedule</span> {job.get('Experience', 'Not specified')}
+                                </span>
+                                <span style='background-color: {source_bg}; color: {source_fg}; padding: 4px 10px; border-radius: 16px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px;'>
+                                    <span class="material-symbols-rounded" style="font-size: 16px;">{source_icon}</span> {job.get('Source', 'Unknown Source')}
                                 </span>
                             </div>
                             """, 
@@ -350,8 +377,19 @@ if "pipeline_data" in st.session_state:
             if line.startswith("resource:"):
                 parts = line.replace("resource:", "", 1).split(" : ", 1)
                 if len(parts) == 2:
-                    dynamic_res.append({"title": parts[0].strip(), "link": parts[1].strip()})
+                    dynamic_res.append({"title": parts[0].strip(), "link": parts[1].strip(), "Source": "Web Search"})
         
+        # Assign source to static resources
+        for sr in static_resources:
+            if "udemy.com" in sr.get("link", ""):
+                sr["Source"] = "Udemy"
+            elif "youtube.com" in sr.get("link", ""):
+                sr["Source"] = "YouTube"
+            elif "coursera.org" in sr.get("link", ""):
+                sr["Source"] = "Coursera"
+            else:
+                sr["Source"] = "Resource"
+                
         combined_resources = static_resources + dynamic_res
         unique_resources = {res["link"]: res for res in combined_resources}.values()
         top_10 = list(unique_resources)[:10]
@@ -365,6 +403,31 @@ if "pipeline_data" in st.session_state:
                 with col:
                     with st.container(border=True):
                         st.markdown(f"**{res.get('title', 'Course')}**")
+                        
+                        source = res.get("Source", "Resource")
+                        if source == "Udemy":
+                            s_bg, s_fg, s_icon = "#FCE7F3", "#9D174D", "menu_book"
+                        elif source == "Coursera":
+                            s_bg, s_fg, s_icon = "#DBEAFE", "#1E3A8A", "school"
+                        elif source == "YouTube":
+                            s_bg, s_fg, s_icon = "#FEE2E2", "#991B1B", "play_circle"
+                        else:
+                            s_bg, s_fg, s_icon = "#F3F4F6", "#374151", "travel_explore"
+                            
+                        st.markdown(
+                            f"""
+                            <style>
+                            @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,0,0');
+                            </style>
+                            <div style='margin-bottom: 12px;'>
+                                <span style='background-color: {s_bg}; color: {s_fg}; padding: 4px 10px; border-radius: 16px; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;'>
+                                    <span class="material-symbols-rounded" style="font-size: 16px;">{s_icon}</span> {source}
+                                </span>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+                        
                         st.link_button("View Resource", res.get("link", "#"), use_container_width=True)
 
     with tab4:
