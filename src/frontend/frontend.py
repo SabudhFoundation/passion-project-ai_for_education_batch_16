@@ -357,49 +357,49 @@ if "pipeline_data" in st.session_state:
                 displayed_jobs = filtered_jobs[:st.session_state["job_limit"]]
                 
                 for i, job in enumerate(displayed_jobs):
-                with st.container(border=True):
-                    colA, colB = st.columns([3, 1])
-                    with colA:
-                        st.markdown(f"### {job.get('Title', 'Unknown Title')}")
-                        source_bg = "#E0F2FE" if job.get("Source") == "LinkedIn" else "#FFEDD5"
-                        source_fg = "#0369A1" if job.get("Source") == "LinkedIn" else "#C2410C"
-                        source_icon = "link" if job.get("Source") == "LinkedIn" else "work"
-
-                        st.markdown(
-                            f"""
-                            <style>
-                            @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,0,0');
-                            </style>
-                            <div style='margin-top: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;'>
-                                <span style='background-color: #DBEAFE; color: #1E3A8A; padding: 4px 10px; border-radius: 16px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px;'>
-                                    <span class="material-symbols-rounded" style="font-size: 16px;">business</span> {job.get('Company', 'Unknown Company')}
-                                </span>
-                                <span style='background-color: #FEF3C7; color: #92400E; padding: 4px 10px; border-radius: 16px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px;'>
-                                    <span class="material-symbols-rounded" style="font-size: 16px;">location_on</span> {job.get('Location', 'Unknown Location')}
-                                </span>
-                                <span style='background-color: #E2E8F0; color: #475569; padding: 4px 10px; border-radius: 16px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px;'>
-                                    <span class="material-symbols-rounded" style="font-size: 16px;">schedule</span> {job.get('Experience', 'Not specified')}
-                                </span>
-                                <span style='background-color: {source_bg}; color: {source_fg}; padding: 4px 10px; border-radius: 16px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px;'>
-                                    <span class="material-symbols-rounded" style="font-size: 16px;">{source_icon}</span> {job.get('Source', 'Unknown Source')}
-                                </span>
-                            </div>
-                            """, 
-                            unsafe_allow_html=True
-                        )
-                        st.caption(job.get('Description', ''))
-                    with colB:
-                        st.markdown(f"<h4 style='color: #059669; margin-bottom: 0;'>{job.get('Salary', 'Not Disclosed')}</h4>", unsafe_allow_html=True)
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        if job.get('Link') and job.get('Link') != 'N/A':
-                            st.link_button("Apply Now", job['Link'], type="primary", use_container_width=True)
-                        else:
-                            st.button("No Link", disabled=True, key=f"job_no_link_{i}")
-                            
-            if st.session_state["job_limit"] < len(job_listings):
-                if st.button("Load More Jobs", use_container_width=True):
-                    st.session_state["job_limit"] += 5
-                    st.rerun()
+                    with st.container(border=True):
+                        colA, colB = st.columns([3, 1])
+                        with colA:
+                            st.markdown(f"### {job.get('Title', 'Unknown Title')}")
+                            source_bg = "#E0F2FE" if job.get("Source") == "LinkedIn" else "#FFEDD5"
+                            source_fg = "#0369A1" if job.get("Source") == "LinkedIn" else "#C2410C"
+                            source_icon = "link" if job.get("Source") == "LinkedIn" else "work"
+    
+                            st.markdown(
+                                f"""
+                                <style>
+                                @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,0,0');
+                                </style>
+                                <div style='margin-top: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;'>
+                                    <span style='background-color: #DBEAFE; color: #1E3A8A; padding: 4px 10px; border-radius: 16px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px;'>
+                                        <span class="material-symbols-rounded" style="font-size: 16px;">business</span> {job.get('Company', 'Unknown Company')}
+                                    </span>
+                                    <span style='background-color: #FEF3C7; color: #92400E; padding: 4px 10px; border-radius: 16px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px;'>
+                                        <span class="material-symbols-rounded" style="font-size: 16px;">location_on</span> {job.get('Location', 'Unknown Location')}
+                                    </span>
+                                    <span style='background-color: #E2E8F0; color: #475569; padding: 4px 10px; border-radius: 16px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px;'>
+                                        <span class="material-symbols-rounded" style="font-size: 16px;">schedule</span> {job.get('Experience', 'Not specified')}
+                                    </span>
+                                    <span style='background-color: {source_bg}; color: {source_fg}; padding: 4px 10px; border-radius: 16px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px;'>
+                                        <span class="material-symbols-rounded" style="font-size: 16px;">{source_icon}</span> {job.get('Source', 'Unknown Source')}
+                                    </span>
+                                </div>
+                                """, 
+                                unsafe_allow_html=True
+                            )
+                            st.caption(job.get('Description', ''))
+                        with colB:
+                            st.markdown(f"<h4 style='color: #059669; margin-bottom: 0;'>{job.get('Salary', 'Not Disclosed')}</h4>", unsafe_allow_html=True)
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            if job.get('Link') and job.get('Link') != 'N/A':
+                                st.link_button("Apply Now", job['Link'], type="primary", use_container_width=True)
+                            else:
+                                st.button("No Link", disabled=True, key=f"job_no_link_{i}")
+                                
+                if st.session_state["job_limit"] < len(filtered_jobs):
+                    if st.button("Load More Jobs", use_container_width=True):
+                        st.session_state["job_limit"] += 5
+                        st.rerun()
 
     with tab3:
         st.markdown("#### Recommended Learning Paths")
