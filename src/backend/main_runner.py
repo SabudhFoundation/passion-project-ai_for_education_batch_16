@@ -163,7 +163,29 @@ async def scrape_jobs_node(state: GraphState) -> GraphState:
         GraphState: An updated state dict containing a list of `job_listings`.
     """
     loop = asyncio.get_event_loop()
-    keyword = state.get("target_role") or "software engineer"
+    keyword = state.get("target_role")
+    
+    # If user didn't specify a target role, dynamically infer it from the JD or Resume
+    if not keyword or not str(keyword).strip():
+        jd = state.get("job_description", "")
+        resume = state.get("resume_text", "")
+        try:
+            llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+            if jd:
+                prompt = f"Extract the exact job title from this job description. Return ONLY the job title (e.g. 'Java Developer', 'Data Analyst'), nothing else. No markdown, no quotes.\n\nJD: {str(jd)[:1500]}"
+            elif resume:
+                prompt = f"Based on this resume, what is the single most suitable job title for this candidate? Return ONLY the job title (e.g. 'Java Developer', 'Data Analyst'), nothing else. No markdown, no quotes.\n\nResume: {str(resume)[:1500]}"
+            else:
+                prompt = ""
+                
+            if prompt:
+                res = await llm.ainvoke(prompt)
+                keyword = res.content.strip().replace("'", "").replace('"', "")
+            else:
+                keyword = "software engineer"
+        except Exception:
+            keyword = "software engineer"
+            
     location = state.get("location") or "India"
     
     # Run the synchronous linkedin scraper in a thread
