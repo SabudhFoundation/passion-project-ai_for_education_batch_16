@@ -163,39 +163,59 @@ async def scrape_jobs_node(state: GraphState) -> GraphState:
         GraphState: An updated state dict containing a list of `job_listings`.
     """
     loop = asyncio.get_event_loop()
-    keyword = state.get("target_role")
+    user_keyword = state.get("target_role")
     
-    # If user didn't specify a target role, dynamically infer it from the JD or Resume
-    if not keyword or not str(keyword).strip():
-        jd = state.get("job_description", "")
-        resume = state.get("resume_text", "")
-        try:
-            llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
-            if jd:
-                prompt = f"Extract the exact job title from this job description. Return ONLY the job title (e.g. 'Java Developer', 'Data Analyst'), nothing else. No markdown, no quotes.\n\nJD: {str(jd)[:1500]}"
-            elif resume:
-                prompt = f"Based on this resume, what is the single most suitable job title for this candidate? Return ONLY the job title (e.g. 'Java Developer', 'Data Analyst'), nothing else. No markdown, no quotes.\n\nResume: {str(resume)[:1500]}"
-            else:
-                prompt = ""
-                
-            if prompt:
-                res = await llm.ainvoke(prompt)
-                keyword = res.content.strip().replace("'", "").replace('"', "")
-            else:
-                keyword = "software engineer"
-        except Exception:
-            keyword = "software engineer"
-            
+    jd = state.get("job_description", "")
+    resume = state.get("resume_text", "")
+    
+    # Initialize defaults
+    keyword = user_keyword or "software engineer"
+    f_e = None
+    f_jt = None
+    
+    try:
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+        prompt = f"""
+You are an intelligent job search assistant. 
+Based on the following context, deduce the best parameters for a LinkedIn job search.
+
+User's requested role (if any): '{user_keyword}'
+JD Context: {str(jd)[:1500]}
+Resume Context: {str(resume)[:1500]}
+
+Return ONLY a valid JSON object with exactly these 3 keys:
+- "keyword": The exact job title (e.g., "Java Developer"). If the User's requested role is provided and valid, use it. Otherwise, infer it from the Resume or JD.
+- "level": The LinkedIn experience level code (1=Internship, 2=Entry level, 3=Associate, 4=Mid-Senior level, 5=Director, 6=Executive). Infer from the Resume's years of experience or the JD. If unsure, return null.
+- "job_type": The LinkedIn job type code (F=Full-time, P=Part-time, C=Contract, T=Temporary, I=Volunteer, V=Internship). Infer from the JD. If unsure, return null.
+
+Respond with ONLY the raw JSON string, no markdown blocks.
+"""
+        res = await llm.ainvoke(prompt)
+        import json
+        clean_json = res.content.strip().replace("```json", "").replace("```", "")
+        params = json.loads(clean_json)
+        
+        keyword = params.get("keyword") or keyword
+        f_e = params.get("level")
+        f_jt = params.get("job_type")
+    except Exception:
+        pass
+        
     location = state.get("location") or "India"
+    
+    # Prepare kwargs dynamically to omit None filters
+    linkedin_kwargs = {
+        "keywords": keyword,
+        "location": location,
+        "num_pages": 1
+    }
+    if f_e: linkedin_kwargs["f_E"] = f_e
+    if f_jt: linkedin_kwargs["f_JT"] = f_jt
     
     # Run the synchronous linkedin scraper in a thread
     linkedin_task = loop.run_in_executor(
         None, 
-        lambda: scrape_linkedin_pro(
-            keywords=keyword,
-            location=location,
-            num_pages=1
-        )
+        lambda: scrape_linkedin_pro(**linkedin_kwargs)
     )
     
     # Run the synchronous naukri scraper in a thread
