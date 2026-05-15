@@ -317,12 +317,46 @@ if "pipeline_data" in st.session_state:
         if not job_listings:
             st.info("No jobs found for this role/location right now.")
         else:
-            if "job_limit" not in st.session_state:
-                st.session_state["job_limit"] = 5
+            col1, col2 = st.columns(2)
+            with col1:
+                time_filter = st.selectbox("Time Updated", ["Any time", "Past 24 hours", "Past week", "Past month"])
+            with col2:
+                exp_filter = st.selectbox("Experience Required", ["Any", "Entry level", "Mid level", "Senior"])
                 
-            displayed_jobs = job_listings[:st.session_state["job_limit"]]
-            
-            for i, job in enumerate(displayed_jobs):
+            filtered_jobs = []
+            for job in job_listings:
+                keep = True
+                t_str = str(job.get("Experience", "")).lower() + " " + str(job.get("Description", "")).lower()
+                e_str = str(job.get("Experience", "")).lower() + " " + str(job.get("Title", "")).lower()
+                
+                if time_filter != "Any time":
+                    if time_filter == "Past 24 hours" and not any(w in t_str for w in ["hour", "day", "just now", "today", "recent"]):
+                        keep = False
+                    elif time_filter == "Past week" and not any(w in t_str for w in ["hour", "day", "week", "just now", "today", "recent"]):
+                        keep = False
+                    elif time_filter == "Past month" and not any(w in t_str for w in ["hour", "day", "week", "month", "just now", "today", "recent"]):
+                        keep = False
+                        
+                if keep and exp_filter != "Any":
+                    if exp_filter == "Entry level" and any(w in e_str for w in ["senior", "lead", "manager", "principal", "3 yr", "4 yr", "5 yr"]):
+                        keep = False
+                    elif exp_filter == "Mid level" and any(w in e_str for w in ["intern", "fresher", "student"]):
+                        keep = False
+                    elif exp_filter == "Senior" and not any(w in e_str for w in ["senior", "lead", "manager", "principal", "architect", "5 yr", "6 yr", "10 yr"]):
+                        keep = False
+                        
+                if keep:
+                    filtered_jobs.append(job)
+
+            if not filtered_jobs:
+                st.info("No jobs match the selected filters.")
+            else:
+                if "job_limit" not in st.session_state:
+                    st.session_state["job_limit"] = 5
+                    
+                displayed_jobs = filtered_jobs[:st.session_state["job_limit"]]
+                
+                for i, job in enumerate(displayed_jobs):
                 with st.container(border=True):
                     colA, colB = st.columns([3, 1])
                     with colA:
