@@ -79,8 +79,9 @@ def scrape_linkedin_pro(
                 title = job.find("h3", class_="base-search-card__title").text.strip()
                 company = job.find("h4", class_="base-search-card__subtitle").text.strip()
                 job_location = job.find("span", class_="job-search-card__location").text.strip()
-                link = job.find("a", class_="base-card__full-link")["href"].split("?")[0]
-
+                raw_link = job.find("a", class_="base-card__full-link")["href"].split("?")[0]
+                job_id = raw_link.split("-")[-1]
+                link = f"https://www.linkedin.com/jobs/view/{job_id}/"
                 time_tag = job.find("time")
                 date_posted = time_tag.get("datetime", "") if time_tag else ""
                 ago_time = time_tag.text.strip() if time_tag else ""
